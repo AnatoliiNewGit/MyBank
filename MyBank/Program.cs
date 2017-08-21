@@ -72,8 +72,8 @@ namespace MyBank
                 {
                     Console.WriteLine("Логин не правильный. Попробуйте еще. \n");
                 }
-                Console.WriteLine("Вернуться в главное меню? да/нет");
-                if (Console.ReadLine() == "да")
+                Console.WriteLine("Попробовать еще раз? (Enter/нет)");
+                if (Console.ReadLine() == "нет")
                 {
                     return;
                 }
@@ -95,7 +95,7 @@ namespace MyBank
                         BankAccountBlocked(ref authorization);
                         break;
                     case "3":
-                        Console.WriteLine("Метод разблокировки пользователя");
+                        BankAccountUnblocked(ref authorization);
                         break;
                     case "4":
                         authorization = AddNewBankAccount(authorization);
@@ -113,74 +113,114 @@ namespace MyBank
         }
         static void BankAccountBlocked(ref string[,] authorization)
         {
-            string userName = null;
+            int index;
             do
             {
                 Console.WriteLine("Введите имя пользователя для блокировки счета:");
-                userName = Console.ReadLine();
-                if (ExistName(authorization, userName))
+                index = ExistName(authorization, Console.ReadLine());
+                if (index > -1)
                 {
-                    for (int i = 1; i < authorization.GetLength(0); i++)
-                    {
-                        if (authorization[i, 0] == userName && authorization[i, 3] != "blocked")
-                        {
-                            authorization[i, 3] = "blocked";
-                            Console.WriteLine("Пользователь {0} заблокирован.", authorization[i, 0]);
-                            return;
-                        }
-                        else if (authorization[i, 0] == userName && authorization[i, 3] == "blocked")
-                        {
-                            Console.WriteLine("Пользователь {0} уже заблокирован.", authorization[i, 0]);
-                            return;
-                        }
-                    }
+                    BlockedUnblocked(authorization, index, true);
+                    return;
                 }
                 else
                 {
-                    Console.WriteLine("Клиента с таким именем не найдено. Попробовоть еще раз? (да/нет)");
-                    if (Console.ReadLine() != "да")
+                    Console.WriteLine("Клиента с таким именем не найдено. Попробовать еще раз? (Enter/нет)");
+                    if (Console.ReadLine() == "нет")
                     {
                         return;
                     }
                 }
             } while (true);
         }
+
+        static void BankAccountUnblocked(ref string[,] authorization)
+        {
+            int index;
+            do
+            {
+                Console.WriteLine("Введите имя пользователя для разблокировки счета:");
+                index = ExistName(authorization, Console.ReadLine());
+                if (index > -1)
+                {
+                    BlockedUnblocked(authorization, index, false);
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine("Клиента с таким именем не найдено. Попробовоть еще раз? (Enter/нет)");
+                    if (Console.ReadLine() == "нет")
+                    {
+                        return;
+                    }
+                }
+            } while (true);
+        }
+        static void BlockedUnblocked(string[,] authorization, int index, bool isBlocked)
+        {
+            if (isBlocked)
+            {
+                authorization[index, 3] = "Blocked";
+                Console.WriteLine("Пользователь {0} заблокирован.", authorization[index, 0]);
+            }
+            else if (!isBlocked)
+            {
+                authorization[index, 3] = "Unblocked";
+                Console.WriteLine("Пользователь {0} разблокирован.", authorization[index, 0]);
+            }
+        }
         static string[,] AddNewBankAccount(string[,] authorization)
         {
             string[,] newAuthorization = new string[authorization.GetLength(0) + 1, 4];
             string userName = null;
             string userAccount = null;
-            Console.WriteLine("Введите имя нового пользователя:");
-            userName = Console.ReadLine();
-            Console.WriteLine("Введите счет пользователя:");
-            userAccount = Console.ReadLine();
-
-            for (int i = 0; i < authorization.GetLength(0); i++)
+            int index;
+            do
             {
-                for (int j = 0; j < authorization.GetLength(1); j++)
+                Console.WriteLine("Введите имя нового пользователя:");
+                userName = Console.ReadLine();
+                index = ExistName(authorization, userName);
+                if (index == -1)
                 {
-                    newAuthorization[i, j] = authorization[i, j];
+                    Console.WriteLine("Введите счет пользователя:");
+                    userAccount = Console.ReadLine();
+
+                    for (int i = 0; i < authorization.GetLength(0); i++)
+                    {
+                        for (int j = 0; j < authorization.GetLength(1); j++)
+                        {
+                            newAuthorization[i, j] = authorization[i, j];
+                        }
+                    }
+                    newAuthorization[newAuthorization.GetLength(0) - 1, 0] = userName;
+                    newAuthorization[newAuthorization.GetLength(0) - 1, 2] = userAccount;
+                    newAuthorization[newAuthorization.GetLength(0) - 1, 3] = "Unblocked";
+                    return newAuthorization;
                 }
-            }
-            newAuthorization[newAuthorization.GetLength(0) - 1, 0] = userName;
-            newAuthorization[newAuthorization.GetLength(0) - 1, 2] = userAccount;
-            newAuthorization[newAuthorization.GetLength(0) - 1, 3] = "unblocked";
-            return newAuthorization;
+                else
+                {
+                    Console.WriteLine("Клиента с таким именем уже существует. Попробовоть другое имя? (Enter/нет)");
+                    if (Console.ReadLine() == "нет")
+                    {
+                        return authorization;
+                    }
+                }
+            } while (true);
         }
         static string[,] BankAccountDelete(string[,] authorization)
         {
             string[,] newAuthorization = new string[authorization.GetLength(0) - 1, 4];
-            string userName = null;
             int newIndex = 0;
+            int index;
             do
             {
                 Console.WriteLine("Введите имя пользователя для удаления счета:");
-                userName = Console.ReadLine();
-                if (ExistName(authorization, userName))
+                index = ExistName(authorization, Console.ReadLine());
+                if (index > -1)
                 {
                     for (int i = 0; i < authorization.GetLength(0); i++)
                     {
-                        if (userName != "Admin" && authorization[i, 0] == userName)
+                        if (i == index)
                         {
                             continue;
                         }
@@ -193,12 +233,13 @@ namespace MyBank
                             newIndex++;
                         }
                     }
+                    Console.WriteLine("Пользователь {0} удален.", authorization[index, 0]);
                     return newAuthorization;
                 }
                 else
                 {
-                    Console.WriteLine("Клиента с таким именем не найдено. Попробовоть еще раз? (да/нет)");
-                    if (Console.ReadLine() != "да")
+                    Console.WriteLine("Клиента с таким именем не найдено. Попробовать еще раз? (Enter/нет)");
+                    if (Console.ReadLine() == "нет")
                     {
                         return authorization;
                     }
@@ -207,26 +248,29 @@ namespace MyBank
         }
         static void ShowListAccount(string[,] authorization)
         {
-            Console.WriteLine("Имя | " + "Счет | " + "Статус");
-            for (int i = 0; i < authorization.GetLength(0); i++)
+            if (authorization.GetLength(0) > 1)
             {
-                if (authorization[i, 0] != "Admin")
+                Console.WriteLine("Имя | " + "Счет | " + "Статус");
+                for (int i = 1; i < authorization.GetLength(0); i++)
                 {
                     Console.WriteLine("{0} | {1} | {2}", authorization[i, 0], authorization[i, 2], authorization[i, 3]);
                 }
             }
+            else
+            {
+                Console.WriteLine("Список клиентов пуст.");
+            }
         }
-
-        static bool ExistName(string[,] authorization, string name)
+        static int ExistName(string[,] authorization, string name)
         {
             for (int i = 1; i < authorization.GetLength(0); i++)
             {
                 if (authorization[i, 0] == name)
                 {
-                    return true;
+                    return i;
                 }
             }
-            return false;
+            return -1;
         }
     }
 }
